@@ -65,13 +65,21 @@ $$\text{Cost}(n) = \left\lfloor \text{BaseCost} \times r^n \right\rfloor$$
 
 #### Bulk Purchases
 
-To calculate the cost of buying $k$ units at once (e.g., 10x, 100x):
+To calculate the exact cost of buying $k$ units at once (e.g., 10x, 100x), compute the sum of individual floored costs:
 
-$$\text{Cost}(n, k) = \sum_{j=0}^{k-1} \text{Cost}(n + j) = \text{BaseCost} \times \frac{r^n \times (r^k - 1)}{r - 1}$$
+$$\text{Cost}(n, k) = \sum_{j=0}^{k-1} \text{Cost}(n + j) = \sum_{j=0}^{k-1} \left\lfloor \text{BaseCost} \times r^{n + j} \right\rfloor$$
 
-To calculate the maximum affordable units $\text{Max}(n)$ with budget $B$:
+In the engine (`src/engine/economy.py`), bulk purchase totals for discrete batches (10x, 100x) are computed by summing individual floored terms in an accumulator loop. This prevents overcharging players relative to sequential 1x purchases and avoids fractional hat amounts.
 
-$$k_{\max} = \left\lfloor \frac{\ln\left(1 + \frac{B \times (r - 1)}{\text{BaseCost} \times r^n}\right)}{\ln(r)} \right\rfloor$$
+The continuous closed-form geometric series can serve as an upper-bound approximation:
+
+$$\text{Cost}_{\text{approx}}(n, k) = \text{BaseCost} \times \frac{r^n \times (r^k - 1)}{r - 1}$$
+
+To calculate the maximum affordable units with budget $B$, inverting the continuous formula provides a conservative baseline lower bound:
+
+$$k_{\text{est}} = \left\lfloor \frac{\ln\left(1 + \frac{B \times (r - 1)}{\text{BaseCost} \times r^n}\right)}{\ln(r)} \right\rfloor$$
+
+Because floored terms are strictly $\le$ continuous terms, $k_{\text{est}}$ may occasionally underestimate affordable units by 1. In `src/engine/economy.py`, $k_{\text{est}}$ serves as the starting estimate, which is then verified and adjusted upward via discrete step checks while remaining budget allows.
 
 ### Tick Mechanics & Offline Progress
 
@@ -81,9 +89,9 @@ $$k_{\max} = \left\lfloor \frac{\ln\left(1 + \frac{B \times (r - 1)}{\text{BaseC
 - **Production Update:**
   $$\Delta \text{Hats} = \text{Total HPS} \times \Delta t$$
 - **Offline Progress:**
-  - On application startup, compare current UNIX timestamp against the last saved timestamp.
-  - Offline earnings credit:
-    $$\text{Offline Hats} = \text{Total HPS} \times \min(\text{Elapsed Time}, \text{Max Offline Cap}) \times \text{Efficiency Factor}$$
+  - On application startup, compare current UNIX timestamp against the last saved timestamp: $\text{Elapsed Time} = t_{\text{current}} - t_{\text{last\_saved}}$.
+  - Offline earnings credit (clamped to prevent negative earnings if system clock drifts or moves backward):
+    $$\text{Offline Hats} = \text{Total HPS} \times \max(0, \min(\text{Elapsed Time}, \text{Max Offline Cap})) \times \text{Efficiency Factor}$$
   - Default cap: 8 hours; default efficiency: 100% (or configurable via upgrades).
 
 ---
@@ -215,7 +223,7 @@ Game progress is saved to a local JSON file (`savegame.json` in user data direct
   "version": 1,
   "last_saved_timestamp": 1794561848,
   "total_hats": 14250.75,
-  "lifetime_hats": 35890.0,
+  "lifetime_hats": 50000.0,
   "total_clicks": 420,
   "generators": {
     "rhel": 25,
@@ -316,7 +324,7 @@ The implementation is broken down into modular, sequential phases for developmen
 - [ ] **Phase 5: Upgrades & Synergies System**
   - [ ] Create upgrade catalog and modifier system in `src/models/upgrade.py`.
   - [ ] Build upgrade store / shelf UI component.
-  - [ ] Implement product synergy multipliers (e.g., Satellite boosting RHEL).
+  - [ ] Implement product synergy multipliers (e.g., RHEL boosting Satellite).
 - [ ] **Phase 6: Audio, Visuals & UI Polish**
   - [ ] Add custom graphics for Red Hat products and themed hat sprites.
   - [ ] Implement particle effects, floating click texts (`+1`), and pulse animations.
