@@ -48,6 +48,7 @@ def test_state_serialization_roundtrip():
         lifetime_hats=500.0,
         total_clicks=42,
         hps=12.5,
+        click_power=5.0,
         generators={"rhel": 5, "ansible": 1},
         upgrades_unlocked=["selinux_hardening"],
     )
@@ -55,6 +56,7 @@ def test_state_serialization_roundtrip():
     assert data["version"] == 1
     assert data["total_hats"] == 150.0
     assert data["total_clicks"] == 42
+    assert data["click_power"] == 5.0
     assert data["generators"]["rhel"] == 5
 
     restored = GameState.from_dict(data)
@@ -62,5 +64,6 @@ def test_state_serialization_roundtrip():
     assert restored.lifetime_hats == 500.0
     assert restored.total_clicks == 42
     assert restored.hps == 12.5
+    assert restored.click_power == 5.0
     assert restored.generators == {"rhel": 5, "ansible": 1}
     assert restored.upgrades_unlocked == ["selinux_hardening"]

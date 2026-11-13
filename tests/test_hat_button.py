@@ -60,17 +60,19 @@ def test_button_event_handling():
 
 
 def test_button_animation_update():
-    """Verify click animation updates scale and popups over time."""
+    """Verify click animation updates scale, pressed state, and popups over time."""
     state = GameState()
     button = HatButton(x=100, y=100, radius=50)
     button.handle_click(state)
 
+    assert button.is_pressed is True
     assert button.scale == 0.90
     assert len(button.popups) == 1
 
     # Advance time past animation duration
     button.update(0.15)
     assert button.click_animation_timer == 0.0
+    assert button.is_pressed is False
     assert button.scale >= 0.99
 
     # Advance time past popup lifetime (0.8s)

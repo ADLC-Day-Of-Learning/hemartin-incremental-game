@@ -26,7 +26,7 @@ def test_game_escape_key_exit():
 
 
 def test_game_spacebar_click():
-    """Verify pressing Spacebar triggers a manual click on the hat."""
+    """Verify pressing Spacebar triggers a manual click on the hat and resets pressed state."""
     game = Game()
     assert game.state.total_hats == 0
 
@@ -34,6 +34,23 @@ def test_game_spacebar_click():
     game.handle_event(key_event)
     assert game.state.total_hats == 1
     assert game.state.total_clicks == 1
+    assert game.button.is_pressed is True
+
+    # After simulation tick past animation duration, pressed state resets to False
+    game.update(0.15)
+    assert game.button.is_pressed is False
+
+
+def test_game_spacebar_keyup():
+    """Verify releasing Spacebar clears button pressed state."""
+    game = Game()
+    key_down = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_SPACE, "mod": 0})
+    game.handle_event(key_down)
+    assert game.button.is_pressed is True
+
+    key_up = pygame.event.Event(pygame.KEYUP, {"key": pygame.K_SPACE, "mod": 0})
+    game.handle_event(key_up)
+    assert game.button.is_pressed is False
 
 
 def test_game_update_and_render():

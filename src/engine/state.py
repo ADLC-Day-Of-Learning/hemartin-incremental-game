@@ -47,6 +47,7 @@ class GameState:
             "lifetime_hats": self.lifetime_hats,
             "total_clicks": self.total_clicks,
             "hps": self.hps,
+            "click_power": self.click_power,
             "generators": dict(self.generators),
             "upgrades_unlocked": list(self.upgrades_unlocked),
         }

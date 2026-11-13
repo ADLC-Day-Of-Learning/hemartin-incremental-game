@@ -109,6 +109,8 @@ class HatButton:
             # Rebound back to normal scale
             t = 1.0 - (self.click_animation_timer / 0.12)
             self.scale = 0.90 + (0.10 * t)
+            if self.click_animation_timer == 0.0:
+                self.is_pressed = False
         else:
             # Subtle hover zoom
             target_scale = 1.04 if self.is_hovered else 1.0

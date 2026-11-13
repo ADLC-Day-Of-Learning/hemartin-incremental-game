@@ -97,6 +97,11 @@ class Game:
                 self.button.handle_click(self.state)
                 return
 
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_SPACE:
+                self.button.is_pressed = False
+                return
+
         self.button.handle_event(event, self.state)
 
     def update(self, dt: float) -> None:
