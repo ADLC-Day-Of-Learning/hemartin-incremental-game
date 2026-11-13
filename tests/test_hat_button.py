@@ -1,6 +1,7 @@
 """Unit tests for the interactive central Red Hat button component."""
 
 import pygame
+from src.config import HAT_LOGO_PATH
 from src.engine.state import GameState
 from src.ui.hat_button import HatButton
 
@@ -78,3 +79,100 @@ def test_button_animation_update():
     # Advance time past popup lifetime (0.8s)
     button.update(1.0)
     assert len(button.popups) == 0
+
+
+def test_button_loads_official_logo_by_default():
+    """Verify default HatButton initialization loads the official Red Hat logo."""
+    button = HatButton()
+    assert button.image is not None
+    assert button.image.get_size() == (640, 486)
+    assert button.image_path == HAT_LOGO_PATH
+
+
+def test_button_fallback_when_image_missing_or_none():
+    """Verify procedural fallback activates when image is None or path is missing."""
+    # Test with image_path=None
+    button_none = HatButton(image_path=None)
+    assert button_none.image is None
+
+    surf = pygame.Surface((300, 300))
+    button_none.draw(surf)  # Procedural rendering should execute cleanly
+
+    # Test with non-existent path
+    button_missing = HatButton(image_path="nonexistent_logo_file.png")
+    assert button_missing.image is None
+    button_missing.draw(surf)  # Procedural rendering should execute cleanly
+
+
+def test_button_draw_with_logo_in_all_states():
+    """Verify drawing with official logo handles normal, hover, pressed, and popup states."""
+    pygame.font.init()
+    surface = pygame.Surface((400, 400), pygame.SRCALPHA)
+    state = GameState()
+    button = HatButton(x=200, y=200, radius=80)
+    assert button.image is not None
+
+    # Normal state render
+    button.draw(surface)
+
+    # Hovered state render
+    button.is_hovered = True
+    button.draw(surface)
+
+    # Pressed state render (with tactile color tint)
+    button.handle_click(state)
+    assert button.is_pressed is True
+    assert len(button.popups) > 0
+    font = pygame.font.Font(None, 24)
+    button.draw(surface, popup_font=font)
+
+
+def test_button_scale_caching():
+    """Verify smoothscaled logo surface is cached across frames with the same dimensions."""
+    surface = pygame.Surface((400, 400))
+    button = HatButton(x=200, y=200, radius=80)
+
+    # First draw populates cache
+    button.draw(surface)
+    cached = button._cached_scaled_image
+    assert cached is not None
+    size1 = button._cached_size
+
+    # Second draw with identical scale reuses cached surface
+    button.draw(surface)
+    assert button._cached_scaled_image is cached
+    assert button._cached_size == size1
+
+    # Changing scale updates cache to new size
+    button.scale = 0.90
+    button.draw(surface)
+    assert button._cached_size != size1
+
+
+def test_button_load_image_cache_invalidation_and_path_update():
+    """Verify load_image updates image_path and invalidates surface cache."""
+    surface = pygame.Surface((400, 400))
+    button = HatButton(x=200, y=200, radius=80)
+    assert button.image_path == HAT_LOGO_PATH
+    assert button.image is not None
+
+    # Populate cache
+    button.draw(surface)
+    assert button._cached_scaled_image is not None
+    assert button._cached_size is not None
+
+    # Loading None should update path and invalidate cache
+    button.load_image(None)
+    assert button.image_path is None
+    assert button.image is None
+    assert button._cached_scaled_image is None
+    assert button._cached_size is None
+
+    # Re-loading valid image should update path, reload surface, and keep cache clean
+    button.load_image(HAT_LOGO_PATH)
+    assert button.image_path == HAT_LOGO_PATH
+    assert button.image is not None
+    assert button._cached_scaled_image is None
+    assert button._cached_size is None
+
+

@@ -1,7 +1,7 @@
 """Unit tests for Game engine loop, event dispatch, and display configurations."""
 
 import pygame
-from src.config import TARGET_FPS, WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
+from src.config import HAT_LOGO_PATH, TARGET_FPS, WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
 from src.engine.game import Game
 
 
@@ -71,3 +71,5 @@ def test_config_values():
     assert WINDOW_WIDTH == 1280
     assert WINDOW_HEIGHT == 720
     assert WINDOW_TITLE == "Red Hat Clicker"
+    assert HAT_LOGO_PATH.exists()
+    assert HAT_LOGO_PATH.is_file()

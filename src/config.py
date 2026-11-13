@@ -1,5 +1,7 @@
 """Configuration constants and display settings for Red Hat Clicker."""
 
+from pathlib import Path
+
 # Window & display settings
 WINDOW_WIDTH: int = 1280
 WINDOW_HEIGHT: int = 720
@@ -35,6 +37,11 @@ COLOR_ACCENT: tuple[int, int, int] = (0, 102, 204)
 HAT_BUTTON_CENTER_X: int = LEFT_PANEL_WIDTH // 2
 HAT_BUTTON_CENTER_Y: int = 410
 HAT_BUTTON_RADIUS: int = 110
+
+# Asset paths
+ASSETS_DIR: Path = Path(__file__).resolve().parent.parent / "assets"
+IMAGES_DIR: Path = ASSETS_DIR / "images"
+HAT_LOGO_PATH: Path = IMAGES_DIR / "redhat.png"
 
 # Economy defaults
 BASE_CLICK_VALUE: float = 1.0
