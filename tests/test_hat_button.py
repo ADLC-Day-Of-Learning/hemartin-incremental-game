@@ -106,6 +106,7 @@ def test_button_fallback_when_image_missing_or_none():
 
 def test_button_draw_with_logo_in_all_states():
     """Verify drawing with official logo handles normal, hover, pressed, and popup states."""
+    pygame.font.init()
     surface = pygame.Surface((400, 400), pygame.SRCALPHA)
     state = GameState()
     button = HatButton(x=200, y=200, radius=80)
@@ -146,4 +147,32 @@ def test_button_scale_caching():
     button.scale = 0.90
     button.draw(surface)
     assert button._cached_size != size1
+
+
+def test_button_load_image_cache_invalidation_and_path_update():
+    """Verify load_image updates image_path and invalidates surface cache."""
+    surface = pygame.Surface((400, 400))
+    button = HatButton(x=200, y=200, radius=80)
+    assert button.image_path == HAT_LOGO_PATH
+    assert button.image is not None
+
+    # Populate cache
+    button.draw(surface)
+    assert button._cached_scaled_image is not None
+    assert button._cached_size is not None
+
+    # Loading None should update path and invalidate cache
+    button.load_image(None)
+    assert button.image_path is None
+    assert button.image is None
+    assert button._cached_scaled_image is None
+    assert button._cached_size is None
+
+    # Re-loading valid image should update path, reload surface, and keep cache clean
+    button.load_image(HAT_LOGO_PATH)
+    assert button.image_path == HAT_LOGO_PATH
+    assert button.image is not None
+    assert button._cached_scaled_image is None
+    assert button._cached_size is None
+
 

@@ -69,25 +69,28 @@ class HatButton:
         self.scale: float = 1.0
         self.click_animation_timer: float = 0.0
         self.popups: list[FloatingText] = []
-        self.image_path: Optional[Path] = Path(image_path) if image_path is not None else None
+        self.image_path: Optional[Path] = None
         self.image: Optional[pygame.Surface] = None
         self._cached_scaled_image: Optional[pygame.Surface] = None
         self._cached_size: Optional[tuple[int, int]] = None
-        self.load_image(self.image_path)
+        self.load_image(image_path)
 
     def load_image(self, path: Optional[Union[str, Path]]) -> None:
         """Load hat logo surface from image path, with graceful fallback if absent."""
-        if path is None:
+        self.image_path = Path(path) if path is not None else None
+        self._cached_scaled_image = None
+        self._cached_size = None
+
+        if self.image_path is None:
             self.image = None
             return
 
-        resolved_path = Path(path)
-        if not resolved_path.is_file():
+        if not self.image_path.is_file():
             self.image = None
             return
 
         try:
-            surf = pygame.image.load(str(resolved_path))
+            surf = pygame.image.load(str(self.image_path))
             if pygame.display.get_init() and pygame.display.get_surface() is not None:
                 try:
                     surf = surf.convert_alpha()
