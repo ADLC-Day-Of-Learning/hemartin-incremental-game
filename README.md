@@ -305,11 +305,11 @@ The implementation is broken down into modular, sequential phases for developmen
   - [x] Define tiered Red Hat products catalog and scaling formulas.
   - [x] Design technical architecture, directory structure, and save specification.
   - [x] Publish implementation blueprint in `README.md`.
-- [ ] **Phase 2: Project Scaffold & Minimal Pygame Loop**
-  - [ ] Set up `requirements.txt` with Pygame and Pytest.
-  - [ ] Initialize project directories and config modules (`src/config.py`).
-  - [ ] Build basic 60 FPS Pygame loop with window handling in `src/main.py`.
-  - [ ] Implement clickable central Red Hat button and basic click counter.
+- [x] **Phase 2: Project Scaffold & Minimal Pygame Loop** (Issue #4)
+  - [x] Set up `requirements.txt` with Pygame and Pytest.
+  - [x] Initialize project directories and config modules (`src/config.py`).
+  - [x] Build basic 60 FPS Pygame loop with window handling in `src/main.py`.
+  - [x] Implement clickable central Red Hat button and basic click counter.
 - [ ] **Phase 3: Economy Engine & Product Store**
   - [ ] Implement `src/engine/economy.py` with cost formulas and HPS calculation.
   - [ ] Create Red Hat product generator definitions in `src/models/generator.py`.
