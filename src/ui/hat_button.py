@@ -1,7 +1,8 @@
 """Interactive central Red Hat button component."""
 
 import math
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 import pygame
 
 from src.config import (
@@ -15,6 +16,7 @@ from src.config import (
     HAT_BUTTON_CENTER_X,
     HAT_BUTTON_CENTER_Y,
     HAT_BUTTON_RADIUS,
+    HAT_LOGO_PATH,
 )
 from src.engine.state import GameState
 
@@ -57,6 +59,7 @@ class HatButton:
         x: int = HAT_BUTTON_CENTER_X,
         y: int = HAT_BUTTON_CENTER_Y,
         radius: int = HAT_BUTTON_RADIUS,
+        image_path: Optional[Union[str, Path]] = HAT_LOGO_PATH,
     ):
         self.x = x
         self.y = y
@@ -66,6 +69,33 @@ class HatButton:
         self.scale: float = 1.0
         self.click_animation_timer: float = 0.0
         self.popups: list[FloatingText] = []
+        self.image_path: Optional[Path] = Path(image_path) if image_path is not None else None
+        self.image: Optional[pygame.Surface] = None
+        self._cached_scaled_image: Optional[pygame.Surface] = None
+        self._cached_size: Optional[tuple[int, int]] = None
+        self.load_image(self.image_path)
+
+    def load_image(self, path: Optional[Union[str, Path]]) -> None:
+        """Load hat logo surface from image path, with graceful fallback if absent."""
+        if path is None:
+            self.image = None
+            return
+
+        resolved_path = Path(path)
+        if not resolved_path.is_file():
+            self.image = None
+            return
+
+        try:
+            surf = pygame.image.load(str(resolved_path))
+            if pygame.display.get_init() and pygame.display.get_surface() is not None:
+                try:
+                    surf = surf.convert_alpha()
+                except pygame.error:
+                    pass
+            self.image = surf
+        except (pygame.error, OSError):
+            self.image = None
 
     def is_point_inside(self, pos: tuple[int, int]) -> bool:
         """Determine if a screen coordinate falls within the circular button boundary."""
@@ -153,31 +183,51 @@ class HatButton:
         pygame.draw.ellipse(shadow_surf, (10, 10, 14, 130), shadow_surf.get_rect())
         surface.blit(shadow_surf, shadow_rect.topleft)
 
-        # 3. Fedora Brim (curved wide base)
-        brim_rect = pygame.Rect(cx - r, cy + int(r * 0.1), r * 2, int(r * 0.65))
-        pygame.draw.ellipse(surface, hat_color, brim_rect)
-        pygame.draw.ellipse(surface, COLOR_DARK_RED, brim_rect, width=3)
+        # 3. Hat Graphic (Official logo image or procedural fallback)
+        if self.image is not None:
+            base_w = int(self.radius * 2.2)
+            base_h = int(base_w * self.image.get_height() / self.image.get_width())
+            w = max(1, int(base_w * self.scale))
+            h = max(1, int(base_h * self.scale))
 
-        # 4. Fedora Crown (tapered top)
-        crown_width = int(r * 1.15)
-        crown_height = int(r * 1.05)
-        crown_top_y = cy - int(r * 0.75)
-        crown_rect = pygame.Rect(cx - crown_width // 2, crown_top_y, crown_width, crown_height)
-        pygame.draw.ellipse(surface, hat_color, crown_rect)
+            if self._cached_scaled_image is None or self._cached_size != (w, h):
+                self._cached_scaled_image = pygame.transform.smoothscale(self.image, (w, h))
+                self._cached_size = (w, h)
 
-        # Fedora crease highlight (crease along the crown top)
-        crease_rect = pygame.Rect(cx - int(crown_width * 0.35), crown_top_y + 4, int(crown_width * 0.7), int(r * 0.25))
-        crease_surf = pygame.Surface((crease_rect.width, crease_rect.height), pygame.SRCALPHA)
-        pygame.draw.ellipse(crease_surf, (*COLOR_DARK_RED, 180), crease_surf.get_rect())
-        surface.blit(crease_surf, crease_rect.topleft)
+            img_to_blit = self._cached_scaled_image
+            if self.is_pressed:
+                pressed_surf = img_to_blit.copy()
+                pressed_surf.fill((210, 210, 210, 255), special_flags=pygame.BLEND_RGBA_MULT)
+                img_to_blit = pressed_surf
 
-        # 5. Black Ribbon Band
-        band_height = int(r * 0.22)
-        band_y = cy + int(r * 0.12)
-        band_rect = pygame.Rect(cx - int(r * 0.58), band_y, int(r * 1.16), band_height)
-        band_surf = pygame.Surface((band_rect.width, band_rect.height), pygame.SRCALPHA)
-        pygame.draw.ellipse(band_surf, (*COLOR_RED_RIBBON, 240), band_surf.get_rect())
-        surface.blit(band_surf, band_rect.topleft)
+            img_rect = img_to_blit.get_rect(center=(cx, cy))
+            surface.blit(img_to_blit, img_rect.topleft)
+        else:
+            # 3a. Procedural Fedora Brim (curved wide base)
+            brim_rect = pygame.Rect(cx - r, cy + int(r * 0.1), r * 2, int(r * 0.65))
+            pygame.draw.ellipse(surface, hat_color, brim_rect)
+            pygame.draw.ellipse(surface, COLOR_DARK_RED, brim_rect, width=3)
+
+            # 3b. Procedural Fedora Crown (tapered top)
+            crown_width = int(r * 1.15)
+            crown_height = int(r * 1.05)
+            crown_top_y = cy - int(r * 0.75)
+            crown_rect = pygame.Rect(cx - crown_width // 2, crown_top_y, crown_width, crown_height)
+            pygame.draw.ellipse(surface, hat_color, crown_rect)
+
+            # Fedora crease highlight (crease along the crown top)
+            crease_rect = pygame.Rect(cx - int(crown_width * 0.35), crown_top_y + 4, int(crown_width * 0.7), int(r * 0.25))
+            crease_surf = pygame.Surface((crease_rect.width, crease_rect.height), pygame.SRCALPHA)
+            pygame.draw.ellipse(crease_surf, (*COLOR_DARK_RED, 180), crease_surf.get_rect())
+            surface.blit(crease_surf, crease_rect.topleft)
+
+            # 3c. Black Ribbon Band
+            band_height = int(r * 0.22)
+            band_y = cy + int(r * 0.12)
+            band_rect = pygame.Rect(cx - int(r * 0.58), band_y, int(r * 1.16), band_height)
+            band_surf = pygame.Surface((band_rect.width, band_rect.height), pygame.SRCALPHA)
+            pygame.draw.ellipse(band_surf, (*COLOR_RED_RIBBON, 240), band_surf.get_rect())
+            surface.blit(band_surf, band_rect.topleft)
 
         # 6. Render floating text popups
         if popup_font:
