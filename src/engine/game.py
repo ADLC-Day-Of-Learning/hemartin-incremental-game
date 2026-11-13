@@ -26,7 +26,9 @@ from src.config import (
     WINDOW_WIDTH,
 )
 from src.engine.state import GameState
+from src.models.generator import Generator, get_default_generators
 from src.ui.hat_button import HatButton
+from src.ui.store import StorePanel
 
 
 class Game:
@@ -46,10 +48,21 @@ class Game:
         self.is_running = True
 
         self.state = GameState()
+        self.catalog: dict[str, Generator] = get_default_generators()
+        self.state.recalculate_hps(self.catalog)
+
         self.button = HatButton(
             x=HAT_BUTTON_CENTER_X,
             y=HAT_BUTTON_CENTER_Y,
             radius=HAT_BUTTON_RADIUS,
+        )
+
+        right_divider_x = LEFT_PANEL_WIDTH + CENTER_PANEL_WIDTH
+        self.store = StorePanel(
+            x=right_divider_x,
+            y=0,
+            width=RIGHT_PANEL_WIDTH,
+            height=self.height,
         )
 
         # Initialize Pygame and audio/video subsystems gracefully
@@ -103,10 +116,12 @@ class Game:
                 return
 
         self.button.handle_event(event, self.state)
+        self.store.handle_event(event, self.state, self.catalog)
 
     def update(self, dt: float) -> None:
         """Update simulation state, animations, and economy generation per frame."""
         self.button.update(dt)
+        self.store.update(dt)
 
         # Passive production accumulation
         if self.state.hps > 0:
@@ -186,29 +201,15 @@ class Game:
         news_placeholder = self.font_small.render("System operational. Hat demand surging across clouds.", True, COLOR_TEXT_MUTED)
         target.blit(news_placeholder, (center_x + 36, 245))
 
-        # --- RIGHT PANEL CONTENTS (Store Wireframe) ---
-        store_header = self.font_header.render("Offerings Catalog", True, COLOR_TEXT_PRIMARY)
-        target.blit(store_header, (right_divider_x + 24, 28))
-
-        store_hint = self.font_small.render("Automate hat production (Phase 3)", True, COLOR_TEXT_MUTED)
-        target.blit(store_hint, (right_divider_x + 24, 68))
-
-        # Wireframe cards for forthcoming generators
-        preview_items = [
-            ("Red Hat Enterprise Linux (RHEL)", "Base: 15 RH | +0.1 HPS"),
-            ("Ansible Automation Platform", "Base: 100 RH | +1.0 HPS"),
-            ("Red Hat Satellite", "Base: 1,100 RH | +8.0 HPS"),
-            ("Red Hat OpenShift", "Base: 12,000 RH | +47.0 HPS"),
-        ]
-        for idx, (name, details) in enumerate(preview_items):
-            card_rect = pygame.Rect(right_divider_x + 20, 105 + (idx * 80), RIGHT_PANEL_WIDTH - 40, 68)
-            pygame.draw.rect(target, COLOR_BG, card_rect, border_radius=4)
-            pygame.draw.rect(target, COLOR_PANEL_BORDER, card_rect, width=1, border_radius=4)
-
-            name_surf = self.font_subtitle.render(name, True, COLOR_TEXT_PRIMARY)
-            detail_surf = self.font_small.render(details, True, COLOR_TEXT_SECONDARY)
-            target.blit(name_surf, (card_rect.x + 12, card_rect.y + 12))
-            target.blit(detail_surf, (card_rect.x + 12, card_rect.y + 38))
+        # --- RIGHT PANEL CONTENTS (Store) ---
+        self.store.draw(
+            target,
+            self.state,
+            self.catalog,
+            self.font_header,
+            self.font_subtitle,
+            self.font_small,
+        )
 
     def run(self) -> None:
         """Execute the primary 60 FPS application game loop."""

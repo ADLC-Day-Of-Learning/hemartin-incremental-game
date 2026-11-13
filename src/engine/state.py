@@ -2,9 +2,15 @@
 
 from dataclasses import dataclass, field
 import time
-from typing import Any
+from typing import Any, Optional, Union
 
 from src.config import BASE_CLICK_VALUE
+from src.engine.economy import (
+    calculate_bulk_cost,
+    calculate_max_affordable,
+    calculate_total_hps,
+)
+from src.models.generator import Generator, get_default_generators
 
 
 @dataclass
@@ -37,6 +43,78 @@ class GameState:
         if amount > 0:
             self.total_hats += amount
             self.lifetime_hats += amount
+
+    def can_afford(self, cost: float) -> bool:
+        """Check whether current balance can cover a given cost."""
+        return self.total_hats >= cost
+
+    def spend_hats(self, amount: float) -> bool:
+        """Deduct hats from spendable balance if affordable."""
+        if amount <= 0:
+            return True
+        if self.total_hats >= amount:
+            self.total_hats -= amount
+            return True
+        return False
+
+    def get_generator_count(self, gen_id: str) -> int:
+        """Get the count of owned generators for a specific product ID."""
+        return self.generators.get(gen_id, 0)
+
+    def recalculate_hps(
+        self,
+        catalog: Optional[dict[str, Generator]] = None,
+        global_multiplier: float = 1.0,
+    ) -> float:
+        """Recalculate passive HPS from owned generators and update state."""
+        self.hps = calculate_total_hps(
+            self.generators,
+            global_multiplier=global_multiplier,
+            catalog=catalog,
+        )
+        return self.hps
+
+    def buy_generator(
+        self,
+        gen_id: str,
+        quantity: Union[int, str] = 1,
+        catalog: Optional[dict[str, Generator]] = None,
+    ) -> bool:
+        """Attempt to purchase units of a generator offering.
+
+        Supports discrete quantities (e.g. 1, 10, 100) or 'max' to buy all affordable.
+        Returns True if purchase succeeded, False otherwise.
+        """
+        cat = catalog or get_default_generators()
+        gen = cat.get(gen_id)
+        if gen is None:
+            return False
+
+        current_count = self.get_generator_count(gen_id)
+
+        if str(quantity).lower() == "max":
+            max_res = calculate_max_affordable(gen.base_cost, current_count, self.total_hats)
+            units_to_buy = int(max_res)
+            if units_to_buy <= 0:
+                return False
+            cost = max_res.cost
+        else:
+            try:
+                units_to_buy = int(quantity)
+            except (ValueError, TypeError):
+                return False
+
+            if units_to_buy <= 0:
+                return False
+
+            cost = calculate_bulk_cost(gen.base_cost, current_count, units_to_buy)
+
+        if self.spend_hats(cost):
+            self.generators[gen_id] = current_count + units_to_buy
+            self.recalculate_hps(catalog=cat)
+            return True
+
+        return False
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize state according to the save state specification."""

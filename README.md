@@ -310,12 +310,12 @@ The implementation is broken down into modular, sequential phases for developmen
   - [x] Initialize project directories and config modules (`src/config.py`).
   - [x] Build basic 60 FPS Pygame loop with window handling in `src/main.py`.
   - [x] Implement clickable central Red Hat button and basic click counter.
-- [ ] **Phase 3: Economy Engine & Product Store**
-  - [ ] Implement `src/engine/economy.py` with cost formulas and HPS calculation.
-  - [ ] Create Red Hat product generator definitions in `src/models/generator.py`.
-  - [ ] Build scrollable store UI panel with buy buttons (1x, 10x, 100x).
-  - [ ] Implement delta-time passive income accumulation in the main loop.
-  - [ ] Add unit tests for cost scaling and income mechanics.
+- [x] **Phase 3: Economy Engine & Product Store**
+  - [x] Implement `src/engine/economy.py` with cost formulas and HPS calculation.
+  - [x] Create Red Hat product generator definitions in `src/models/generator.py`.
+  - [x] Build scrollable store UI panel with buy buttons (1x, 10x, 100x).
+  - [x] Implement delta-time passive income accumulation in the main loop.
+  - [x] Add unit tests for cost scaling and income mechanics.
 - [ ] **Phase 4: Save / Load State Persistence**
   - [ ] Implement `src/engine/state.py` for JSON serialization and deserialization.
   - [ ] Implement auto-save on interval and save-on-exit.
