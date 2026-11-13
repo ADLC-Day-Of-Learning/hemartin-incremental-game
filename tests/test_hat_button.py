@@ -106,7 +106,6 @@ def test_button_fallback_when_image_missing_or_none():
 
 def test_button_draw_with_logo_in_all_states():
     """Verify drawing with official logo handles normal, hover, pressed, and popup states."""
-    pygame.font.init()
     surface = pygame.Surface((400, 400), pygame.SRCALPHA)
     state = GameState()
     button = HatButton(x=200, y=200, radius=80)
